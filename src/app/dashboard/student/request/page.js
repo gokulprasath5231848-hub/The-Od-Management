@@ -44,7 +44,7 @@ export default function RequestODPage() {
         endDate,
         duration,
       });
-      showToast('OD request submitted successfully! It will be reviewed by your Class Teacher.', 'success');
+      showToast('OD request submitted successfully! It will be reviewed by your HOD.', 'success');
       setEventName('');
       setReason('');
       setStartDate('');
@@ -115,7 +115,7 @@ export default function RequestODPage() {
 
       <div style={{ marginTop: '20px', padding: '16px', background: 'rgba(99,102,241,0.05)', borderRadius: '12px', border: '1px solid rgba(99,102,241,0.1)' }}>
         <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>
-          <strong style={{ color: 'var(--text-secondary)' }}>Approval Flow:</strong> Your request will go through Class Teacher → Head of Department → Principal for approval.
+          <strong style={{ color: 'var(--text-secondary)' }}>Approval Flow:</strong> Your request will go through Head of Department → Principal for approval.
         </p>
       </div>
     </div>

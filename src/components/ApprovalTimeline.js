@@ -5,7 +5,6 @@ import { formatDateTime, getRoleLabel } from '@/lib/utils';
 import compStyles from '@/styles/components.module.css';
 
 const APPROVAL_LEVELS = [
-  { key: 'CT', label: 'Class Teacher Approval' },
   { key: 'HOD', label: 'HOD Approval' },
   { key: 'PRINCIPAL', label: 'Principal Approval' },
 ];

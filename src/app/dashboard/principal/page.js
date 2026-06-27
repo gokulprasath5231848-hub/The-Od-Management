@@ -1,12 +1,13 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Users, CheckCircle, Clock, XCircle, Music, CheckCheck, BarChart3, Calendar, Inbox, Zap } from 'lucide-react';
+import { Users, CheckCircle, Clock, XCircle, Music, CheckCheck, BarChart3, Calendar, Inbox, Zap, ShieldAlert, Ban } from 'lucide-react';
 import dataStore, { OD_STATUS, OD_TYPE } from '@/lib/data';
 import { formatDate, getStatusColor } from '@/lib/utils';
 import StatCard from '@/components/StatCard';
 import OdRequestCard from '@/components/OdRequestCard';
 import RejectModal from '@/components/RejectModal';
+import CancelOdModal from '@/components/CancelOdModal';
 import { useToast } from '@/components/Toast';
 import styles from '@/styles/dashboard.module.css';
 
@@ -18,7 +19,9 @@ export default function PrincipalDashboard() {
   const [pendingCultural, setPendingCultural] = useState([]);
   const [events, setEvents] = useState([]);
   const [allRequests, setAllRequests] = useState([]);
+  const [approvedRequests, setApprovedRequests] = useState([]);
   const [rejectModal, setRejectModal] = useState({ isOpen: false, request: null });
+  const [cancelModal, setCancelModal] = useState({ isOpen: false, request: null });
 
   useEffect(() => {
     const session = localStorage.getItem('campusod_session');
@@ -35,7 +38,9 @@ export default function PrincipalDashboard() {
     setPendingStudent(pending.filter(r => r.type === OD_TYPE.STUDENT_REQUEST));
     setPendingCultural(pending.filter(r => r.type === OD_TYPE.CULTURAL_EVENT));
     setEvents(dataStore.getEvents());
-    setAllRequests(dataStore.getAllOdRequests().map(r => dataStore.enrichOdRequest(r)));
+    const all = dataStore.getAllOdRequests().map(r => dataStore.enrichOdRequest(r));
+    setAllRequests(all);
+    setApprovedRequests(all.filter(r => r.status === OD_STATUS.APPROVED));
   };
 
   const handleApprove = (odId) => {
@@ -58,6 +63,14 @@ export default function PrincipalDashboard() {
     loadData(currentUser);
   };
 
+  const handleCancelOd = (reasonCategory, remarks) => {
+    if (!cancelModal.request) return;
+    dataStore.cancelOd(cancelModal.request.id, currentUser.id, reasonCategory, remarks);
+    showToast('OD has been cancelled', 'info');
+    setCancelModal({ isOpen: false, request: null });
+    loadData(currentUser);
+  };
+
   if (!currentUser || !stats) return <div className={styles.loadingScreen}><div className={styles.loadingSpinner}></div></div>;
 
   const getEventPendingCount = (eventId) => {
@@ -72,6 +85,7 @@ export default function PrincipalDashboard() {
         <StatCard icon={BarChart3} title="Total Requests" value={stats.totalRequests} accentColor="#6366f1" />
         <StatCard icon={Clock} title="Pending" value={stats.pending} accentColor="#f59e0b" />
         <StatCard icon={CheckCircle} title="Approved" value={stats.approved} accentColor="#22c55e" />
+        <StatCard icon={Ban} title="Cancelled" value={stats.cancelled} accentColor="#f59e0b" />
       </div>
 
       {/* Student OD Pending */}
@@ -162,6 +176,26 @@ export default function PrincipalDashboard() {
         )}
       </div>
 
+      {/* Cancel Approved ODs */}
+      <div style={{ marginTop: '32px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '8px' }}>
+          <ShieldAlert size={20} color="#f59e0b" />
+          <h2 className={styles.sectionTitle} style={{ marginBottom: 0 }}>Cancel Approved ODs ({approvedRequests.length})</h2>
+        </div>
+        <p style={{ color: 'var(--text-muted)', fontSize: '0.85rem', marginBottom: '16px' }}>Revoke approved ODs for disciplinary action or misuse</p>
+        {approvedRequests.length === 0 ? (
+          <div className={styles.emptyState}><p>No approved ODs to cancel.</p></div>
+        ) : (
+          <div style={{ display: 'grid', gap: '16px' }}>
+            {approvedRequests.map(req => (
+              <OdRequestCard key={req.id} request={req}
+                onCancel={(r) => setCancelModal({ isOpen: true, request: r })}
+              />
+            ))}
+          </div>
+        )}
+      </div>
+
       {/* All Requests Table */}
       <div style={{ marginTop: '32px' }}>
         <h2 className={styles.sectionTitle}>All Institution Requests ({allRequests.length})</h2>
@@ -180,7 +214,7 @@ export default function PrincipalDashboard() {
                     </span></td>
                     <td style={{ fontSize: '0.85rem' }}>{formatDate(req.startDate)}</td>
                     <td><span style={{ padding: '3px 10px', borderRadius: '20px', fontSize: '0.75rem', fontWeight: 600, background: `${getStatusColor(req.status)}18`, color: getStatusColor(req.status) }}>
-                      {req.status === OD_STATUS.APPROVED ? 'Approved' : req.status === OD_STATUS.REJECTED ? 'Rejected' : 'Pending'}
+                      {req.status === OD_STATUS.APPROVED ? 'Approved' : req.status === OD_STATUS.REJECTED ? 'Rejected' : req.status === OD_STATUS.CANCELLED ? 'Cancelled' : 'Pending'}
                     </span></td>
                   </tr>
                 ))}
@@ -191,6 +225,7 @@ export default function PrincipalDashboard() {
       </div>
 
       <RejectModal isOpen={rejectModal.isOpen} onClose={() => setRejectModal({ isOpen: false, request: null })} onSubmit={handleReject} studentName={rejectModal.request?.student?.name || ''} />
+      <CancelOdModal isOpen={cancelModal.isOpen} onClose={() => setCancelModal({ isOpen: false, request: null })} onSubmit={handleCancelOd} studentName={cancelModal.request?.student?.name || ''} odId={cancelModal.request?.id || ''} />
     </div>
   );
 }

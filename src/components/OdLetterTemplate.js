@@ -22,10 +22,10 @@ export default function OdLetterTemplate({ odRequest }) {
         {/* Header */}
         <div className={compStyles.letterHeader}>
           <div className={compStyles.letterInstitution}>
-            Sri Venkateswara College of Engineering
+            Chennai Institute of Technology
           </div>
           <div className={compStyles.letterAddress}>
-            Pennalur, Sriperumbudur Tk – 602117 | Autonomous Institution | Affiliated to Anna University
+            Sarathy Nagar, Kundrathur, Chennai – 600069 | Autonomous Institution | Affiliated to Anna University
           </div>
         </div>
 

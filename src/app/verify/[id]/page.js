@@ -5,7 +5,7 @@ import { useParams } from 'next/navigation';
 import { CheckCircle, XCircle, Clock, GraduationCap, Calendar, User, Shield } from 'lucide-react';
 import dataStore, { OD_STATUS, STATUS_LABELS } from '@/lib/data';
 import { formatDate, formatDateTime, getRoleLabel, getStatusColor } from '@/lib/utils';
-import QrCode from '@/components/QrCode';
+
 
 export default function VerifyPage() {
   const params = useParams();
@@ -27,6 +27,7 @@ export default function VerifyPage() {
 
   const isApproved = odRequest?.status === OD_STATUS.APPROVED;
   const isRejected = odRequest?.status === OD_STATUS.REJECTED;
+  const isCancelled = odRequest?.status === OD_STATUS.CANCELLED;
 
   if (loading) {
     return (
@@ -59,18 +60,18 @@ export default function VerifyPage() {
         <div style={{ textAlign: 'center', marginBottom: '32px' }}>
           {isApproved ? (
             <CheckCircle size={64} color="#22c55e" />
-          ) : isRejected ? (
-            <XCircle size={64} color="#ef4444" />
+          ) : isRejected || isCancelled ? (
+            <XCircle size={64} color={isCancelled ? '#f59e0b' : '#ef4444'} />
           ) : (
             <Clock size={64} color="#f59e0b" />
           )}
           <h1 style={{ 
             marginTop: '16px', 
             fontSize: '1.5rem', 
-            color: isApproved ? '#22c55e' : isRejected ? '#ef4444' : '#f59e0b',
+            color: isApproved ? '#22c55e' : isRejected ? '#ef4444' : isCancelled ? '#f59e0b' : '#f59e0b',
             fontWeight: 700 
           }}>
-            {isApproved ? 'VERIFIED \u2014 OD Certificate Valid' : isRejected ? 'REJECTED \u2014 OD Not Approved' : 'PENDING \u2014 Approval In Progress'}
+            {isApproved ? 'VERIFIED \u2014 OD Certificate Valid' : isRejected ? 'REJECTED \u2014 OD Not Approved' : isCancelled ? 'CANCELLED \u2014 OD Revoked by Principal' : 'PENDING \u2014 Approval In Progress'}
           </h1>
           <p style={{ color: '#8888a0', marginTop: '4px' }}>
             Status: {STATUS_LABELS[odRequest.status]}

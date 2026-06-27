@@ -56,6 +56,7 @@ export function getStatusColor(status) {
     PENDING_PRINCIPAL: '#f59e0b',
     APPROVED: '#22c55e',
     REJECTED: '#ef4444',
+    CANCELLED: '#f59e0b',
   };
   return colors[status] || '#888';
 }

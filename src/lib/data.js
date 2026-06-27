@@ -26,6 +26,7 @@ export const OD_STATUS = {
   PENDING_PRINCIPAL: 'PENDING_PRINCIPAL',
   APPROVED: 'APPROVED',
   REJECTED: 'REJECTED',
+  CANCELLED: 'CANCELLED',
 };
 
 export const OD_TYPE = {
@@ -42,7 +43,14 @@ export const STATUS_LABELS = {
   [OD_STATUS.PENDING_PRINCIPAL]: 'Pending Principal',
   [OD_STATUS.APPROVED]: 'Fully Approved',
   [OD_STATUS.REJECTED]: 'Rejected',
+  [OD_STATUS.CANCELLED]: 'Cancelled by Principal',
 };
+
+// ── Cancellation Reason Categories ──────────────────────────
+export const CANCELLATION_REASONS = [
+  { id: 'DISCIPLINARY_ACTION', label: 'Disciplinary Action' },
+  { id: 'MISUSE', label: 'Misuse of OD' },
+];
 
 // ── Departments ─────────────────────────────────────────────
 const DEPARTMENTS = [
@@ -134,7 +142,6 @@ const SEED_OD_REQUESTS = [
     status: OD_STATUS.APPROVED,
     createdAt: '2026-06-15T08:00:00Z',
     approvals: [
-      { approverId: 'CT001', action: 'APPROVED', remarks: 'Good opportunity. Approved.', level: 'CT', timestamp: '2026-06-15T10:00:00Z' },
       { approverId: 'HOD001', action: 'APPROVED', remarks: 'Approved. Represent the department well.', level: 'HOD', timestamp: '2026-06-15T14:00:00Z' },
       { approverId: 'PRIN001', action: 'APPROVED', remarks: 'Approved.', level: 'PRINCIPAL', timestamp: '2026-06-16T09:00:00Z' },
     ],
@@ -148,11 +155,9 @@ const SEED_OD_REQUESTS = [
     endDate: '2026-06-25',
     duration: '1 day',
     type: OD_TYPE.STUDENT_REQUEST,
-    status: OD_STATUS.APPROVED_CT,
+    status: OD_STATUS.PENDING_HOD,
     createdAt: '2026-06-16T07:00:00Z',
-    approvals: [
-      { approverId: 'CT001', action: 'APPROVED', remarks: 'Excellent research. Approved.', level: 'CT', timestamp: '2026-06-16T11:00:00Z' },
-    ],
+    approvals: [],
   },
   {
     id: 'OD003',
@@ -163,7 +168,7 @@ const SEED_OD_REQUESTS = [
     endDate: '2026-06-23',
     duration: '2 days',
     type: OD_TYPE.STUDENT_REQUEST,
-    status: OD_STATUS.PENDING_CT,
+    status: OD_STATUS.PENDING_HOD,
     createdAt: '2026-06-17T06:00:00Z',
     approvals: [],
   },
@@ -179,10 +184,10 @@ const SEED_OD_REQUESTS = [
     status: OD_STATUS.REJECTED,
     createdAt: '2026-06-14T09:00:00Z',
     rejectionReason: 'Student has low attendance (below 75%). Cannot approve OD at this time. Please improve attendance first.',
-    rejectedBy: 'CT002',
+    rejectedBy: 'HOD001',
     rejectedAt: '2026-06-14T15:00:00Z',
     approvals: [
-      { approverId: 'CT002', action: 'REJECTED', remarks: 'Student has low attendance (below 75%). Cannot approve OD at this time. Please improve attendance first.', level: 'CT', timestamp: '2026-06-14T15:00:00Z' },
+      { approverId: 'HOD001', action: 'REJECTED', remarks: 'Student has low attendance (below 75%). Cannot approve OD at this time. Please improve attendance first.', level: 'HOD', timestamp: '2026-06-14T15:00:00Z' },
     ],
   },
   {
@@ -336,7 +341,7 @@ class DataStore {
       duration,
       type,
       eventId,
-      status: type === OD_TYPE.CULTURAL_EVENT ? OD_STATUS.PENDING_PRINCIPAL : OD_STATUS.PENDING_CT,
+      status: type === OD_TYPE.CULTURAL_EVENT ? OD_STATUS.PENDING_PRINCIPAL : OD_STATUS.PENDING_HOD,
       createdAt: new Date().toISOString(),
       approvals: [],
     };
@@ -381,7 +386,7 @@ class DataStore {
     this.init();
     const deptStudents = this.data.users.filter(u => u.departmentId === departmentId && u.role === ROLES.STUDENT).map(u => u.id);
     return this.data.odRequests
-      .filter(r => deptStudents.includes(r.studentId) && r.status === OD_STATUS.APPROVED_CT && r.type === OD_TYPE.STUDENT_REQUEST)
+      .filter(r => deptStudents.includes(r.studentId) && r.status === OD_STATUS.PENDING_HOD && r.type === OD_TYPE.STUDENT_REQUEST)
       .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
   }
 
@@ -402,7 +407,7 @@ class DataStore {
       .filter(r =>
         deptStudents.includes(r.studentId) &&
         r.type === OD_TYPE.STUDENT_REQUEST &&
-        [OD_STATUS.PENDING_CT, OD_STATUS.APPROVED_CT].includes(r.status)
+        [OD_STATUS.PENDING_HOD].includes(r.status)
       )
       .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
   }
@@ -486,6 +491,30 @@ class DataStore {
       action: 'REJECTED',
       remarks: reason,
       level,
+      timestamp: new Date().toISOString(),
+    });
+
+    this.save();
+    return request;
+  }
+
+  // Cancel an approved OD (Principal only)
+  cancelOd(odId, cancelledBy, reasonCategory, remarks = '') {
+    this.init();
+    const request = this.data.odRequests.find(r => r.id === odId);
+    if (!request) return null;
+    if (request.status !== OD_STATUS.APPROVED) return null;
+
+    request.status = OD_STATUS.CANCELLED;
+    request.cancellationReason = reasonCategory;
+    request.cancellationRemarks = remarks;
+    request.cancelledBy = cancelledBy;
+    request.cancelledAt = new Date().toISOString();
+    request.approvals.push({
+      approverId: cancelledBy,
+      action: 'CANCELLED',
+      remarks: `${reasonCategory}${remarks ? ': ' + remarks : ''}`,
+      level: 'PRINCIPAL',
       timestamp: new Date().toISOString(),
     });
 
@@ -584,7 +613,7 @@ class DataStore {
     return {
       totalStudents: students.length,
       totalRequests: requests.length,
-      pending: requests.filter(r => [OD_STATUS.PENDING_CT, OD_STATUS.APPROVED_CT, OD_STATUS.PENDING_HOD, OD_STATUS.APPROVED_HOD, OD_STATUS.PENDING_PRINCIPAL].includes(r.status)).length,
+      pending: requests.filter(r => [OD_STATUS.PENDING_HOD, OD_STATUS.APPROVED_HOD, OD_STATUS.PENDING_PRINCIPAL].includes(r.status)).length,
       approved: requests.filter(r => r.status === OD_STATUS.APPROVED).length,
       rejected: requests.filter(r => r.status === OD_STATUS.REJECTED).length,
       activeOd: requests.filter(r => {
@@ -601,9 +630,10 @@ class DataStore {
     return {
       totalStudents: students.length,
       totalRequests: requests.length,
-      pending: requests.filter(r => ![OD_STATUS.APPROVED, OD_STATUS.REJECTED].includes(r.status)).length,
+      pending: requests.filter(r => ![OD_STATUS.APPROVED, OD_STATUS.REJECTED, OD_STATUS.CANCELLED].includes(r.status)).length,
       approved: requests.filter(r => r.status === OD_STATUS.APPROVED).length,
       rejected: requests.filter(r => r.status === OD_STATUS.REJECTED).length,
+      cancelled: requests.filter(r => r.status === OD_STATUS.CANCELLED).length,
     };
   }
 
@@ -614,9 +644,10 @@ class DataStore {
     return {
       totalStudents: students.length,
       totalRequests: requests.length,
-      pending: requests.filter(r => ![OD_STATUS.APPROVED, OD_STATUS.REJECTED].includes(r.status)).length,
+      pending: requests.filter(r => ![OD_STATUS.APPROVED, OD_STATUS.REJECTED, OD_STATUS.CANCELLED].includes(r.status)).length,
       approved: requests.filter(r => r.status === OD_STATUS.APPROVED).length,
       rejected: requests.filter(r => r.status === OD_STATUS.REJECTED).length,
+      cancelled: requests.filter(r => r.status === OD_STATUS.CANCELLED).length,
       culturalEvents: this.data.events.length,
     };
   }
@@ -640,6 +671,7 @@ class DataStore {
       approver: this.getUser(a.approverId),
     }));
     const rejectedByUser = request.rejectedBy ? this.getUser(request.rejectedBy) : null;
+    const cancelledByUser = request.cancelledBy ? this.getUser(request.cancelledBy) : null;
 
     return {
       ...request,
@@ -648,6 +680,7 @@ class DataStore {
       classInfo,
       approvals: enrichedApprovals,
       rejectedByUser,
+      cancelledByUser,
     };
   }
 }

@@ -34,7 +34,7 @@ export default function StudentDashboard() {
   if (!currentUser) return <div className={styles.loadingScreen}><div className={styles.loadingSpinner}></div></div>;
 
   const approved = requests.filter(r => r.status === OD_STATUS.APPROVED).length;
-  const pending = requests.filter(r => ![OD_STATUS.APPROVED, OD_STATUS.REJECTED].includes(r.status)).length;
+  const pending = requests.filter(r => ![OD_STATUS.APPROVED, OD_STATUS.REJECTED, OD_STATUS.CANCELLED].includes(r.status)).length;
   const rejected = requests.filter(r => r.status === OD_STATUS.REJECTED).length;
 
   return (
@@ -88,7 +88,7 @@ export default function StudentDashboard() {
                 </div>
               )}
             </div>
-            <ApprovalTimeline approvals={selectedRequest.approvals} currentStatus={selectedRequest.status} odType={selectedRequest.type} />
+            <ApprovalTimeline odRequest={selectedRequest} />
             <div className={compStyles.modalActions} style={{ marginTop: '20px' }}>
               {selectedRequest.status === OD_STATUS.APPROVED && (
                 <button className="btn btn-primary" onClick={() => router.push(`/od-letter/${selectedRequest.id}`)}>

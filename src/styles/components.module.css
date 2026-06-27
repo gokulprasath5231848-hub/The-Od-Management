@@ -803,6 +803,64 @@
   color: #888;
 }
 
+/* ========== CANCELLED STATUS ========== */
+.statusCancelled {
+  background: rgba(245,158,11,0.12);
+  color: #fbbf24;
+  border: 1px solid rgba(245,158,11,0.2);
+}
+
+.odCardCancellationInfo {
+  margin-top: 12px;
+  padding: 12px;
+  background: rgba(245,158,11,0.06);
+  border: 1px solid rgba(245,158,11,0.15);
+  border-radius: var(--radius-md);
+}
+
+.odCardCancellationLabel {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: #fbbf24;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  margin-bottom: 4px;
+}
+
+.odCardCancellationRemarks {
+  font-size: 0.85rem;
+  color: #fcd34d;
+  line-height: 1.5;
+}
+
+.odCardCancelledBy {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  margin-top: 4px;
+}
+
+.btnCancel {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 16px;
+  font-size: 0.85rem;
+  font-weight: 500;
+  background: rgba(245,158,11,0.1);
+  color: #fbbf24;
+  border: 1px solid rgba(245,158,11,0.2);
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  transition: all var(--transition-base);
+}
+
+.btnCancel:hover {
+  background: rgba(245,158,11,0.2);
+  border-color: rgba(245,158,11,0.35);
+  box-shadow: 0 0 20px rgba(245,158,11,0.15);
+  transform: translateY(-1px);
+}
+
 /* ========== QR CODE ========== */
 .qrLoading {
   display: flex;

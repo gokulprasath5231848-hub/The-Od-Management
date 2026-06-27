@@ -67,7 +67,7 @@ export default function HodDashboard() {
           <Clock size={18} style={{ color: '#f59e0b', verticalAlign: 'middle', marginRight: '8px' }} />
           Pending HOD Approval ({pendingRequests.length})
         </h2>
-        <p style={{ color: 'var(--text-muted)', fontSize: '0.85rem', marginBottom: '16px' }}>Approved by Class Teacher, awaiting your review</p>
+        <p style={{ color: 'var(--text-muted)', fontSize: '0.85rem', marginBottom: '16px' }}>Student OD requests awaiting your review</p>
         {pendingRequests.length === 0 ? (
           <div className={styles.emptyState}><Inbox size={40} style={{ opacity: 0.3, marginBottom: '8px' }} /><p>No pending approvals.</p></div>
         ) : (
@@ -120,7 +120,7 @@ export default function HodDashboard() {
                     <td>{req.eventName}</td>
                     <td style={{ fontSize: '0.85rem' }}>{formatDate(req.startDate)} – {formatDate(req.endDate)}</td>
                     <td><span style={{ padding: '3px 10px', borderRadius: '20px', fontSize: '0.75rem', fontWeight: 600, background: `${getStatusColor(req.status)}18`, color: getStatusColor(req.status), border: `1px solid ${getStatusColor(req.status)}30` }}>
-                      {req.status === OD_STATUS.APPROVED ? 'Approved' : req.status === OD_STATUS.REJECTED ? 'Rejected' : 'Pending'}
+                      {req.status === OD_STATUS.APPROVED ? 'Approved' : req.status === OD_STATUS.REJECTED ? 'Rejected' : req.status === OD_STATUS.CANCELLED ? 'Cancelled' : 'Pending'}
                     </span></td>
                   </tr>
                 ))}

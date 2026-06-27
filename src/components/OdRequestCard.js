@@ -1,6 +1,6 @@
 'use client';
 
-import { Calendar, Clock, CheckCircle, XCircle } from 'lucide-react';
+import { Calendar, Clock, CheckCircle, XCircle, ShieldAlert } from 'lucide-react';
 import { OD_STATUS, STATUS_LABELS } from '@/lib/data';
 import { formatDate } from '@/lib/utils';
 import compStyles from '@/styles/components.module.css';
@@ -8,11 +8,12 @@ import compStyles from '@/styles/components.module.css';
 function getStatusBadgeClass(status) {
   if (status === OD_STATUS.APPROVED) return compStyles.statusApproved;
   if (status === OD_STATUS.REJECTED) return compStyles.statusRejected;
-  if ([OD_STATUS.APPROVED_CT, OD_STATUS.APPROVED_HOD].includes(status)) return compStyles.statusInProgress;
+  if (status === OD_STATUS.CANCELLED) return compStyles.statusCancelled;
+  if ([OD_STATUS.APPROVED_HOD, OD_STATUS.PENDING_HOD].includes(status)) return compStyles.statusInProgress;
   return compStyles.statusPending;
 }
 
-export default function OdRequestCard({ request, showActions = false, onView, onApprove, onReject }) {
+export default function OdRequestCard({ request, showActions = false, onView, onApprove, onReject, onCancel }) {
   if (!request) return null;
 
   const statusLabel = STATUS_LABELS[request.status] || request.status;
@@ -58,7 +59,19 @@ export default function OdRequestCard({ request, showActions = false, onView, on
         </div>
       )}
 
-      {showActions && ![OD_STATUS.APPROVED, OD_STATUS.REJECTED].includes(request.status) && (
+      {request.status === OD_STATUS.CANCELLED && request.cancellationReason && (
+        <div className={compStyles.odCardCancellationInfo}>
+          <div className={compStyles.odCardCancellationLabel}>Cancelled — {request.cancellationReason}</div>
+          {request.cancellationRemarks && (
+            <div className={compStyles.odCardCancellationRemarks}>{request.cancellationRemarks}</div>
+          )}
+          {request.cancelledByUser && (
+            <div className={compStyles.odCardCancelledBy}>— {request.cancelledByUser.name}</div>
+          )}
+        </div>
+      )}
+
+      {showActions && ![OD_STATUS.APPROVED, OD_STATUS.REJECTED, OD_STATUS.CANCELLED].includes(request.status) && (
         <div className={compStyles.odCardActions} onClick={(e) => e.stopPropagation()}>
           <button
             className={compStyles.btnApprove}
@@ -73,6 +86,18 @@ export default function OdRequestCard({ request, showActions = false, onView, on
           >
             <XCircle size={16} />
             Reject
+          </button>
+        </div>
+      )}
+
+      {onCancel && request.status === OD_STATUS.APPROVED && (
+        <div className={compStyles.odCardActions} onClick={(e) => e.stopPropagation()}>
+          <button
+            className={compStyles.btnCancel}
+            onClick={(e) => { e.stopPropagation(); onCancel?.(request); }}
+          >
+            <ShieldAlert size={16} />
+            Cancel OD
           </button>
         </div>
       )}
